@@ -101,9 +101,11 @@
         window.addEventListener('load', async () => {
             const { accessToken, type } = getTokensFromURL();
             
-            // Check if this is an email confirmation (not password reset)
-            if (type !== 'signup' && type !== 'email_change') {
-                showError('This link is not for email confirmation.');
+            console.log('URL tokens:', { accessToken, type }); // Debug log
+            
+            // Check if this is a password reset (type = 'recovery')
+            if (type === 'recovery') {
+                showError('This is a password reset link. Please use the main page for password reset.');
                 return;
             }
             
