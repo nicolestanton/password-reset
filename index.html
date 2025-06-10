@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -145,11 +144,12 @@
     </div>
 
     <script>
-        // Your Supabase credentials
-        const SUPABASE_URL = 'https://pnvnqhyzkxjtjbntvbdn.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBudm5xaHl6a3hqdGpibnR2YmRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMzY2MDUsImV4cCI6MjA2MzkxMjYwNX0.yx32rHTrE7YF1E1RTB-VXZwOXHjIrgQol08KoFOMyBU';
-        
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Get tokens from URL hash
+        function getTokenFromURL() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            return params.get('access_token');
+        }
 
         document.getElementById('passwordForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -165,18 +165,34 @@
                 return;
             }
             
+            // Get access token from URL
+            const accessToken = getTokenFromURL();
+            if (!accessToken) {
+                showError('Invalid reset link. Please request a new password reset.');
+                return;
+            }
+            
             // Show loading state
             submitBtn.disabled = true;
             loading.style.display = 'block';
             
             try {
-                // Update the user's password
-                const { error } = await supabase.auth.updateUser({
-                    password: password
+                // Call your backend API endpoint
+                const response = await fetch('http://localhost:3000/api/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        accessToken: accessToken,
+                        newPassword: password
+                    })
                 });
 
-                if (error) {
-                    throw error;
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to reset password');
                 }
 
                 // Show success message
@@ -210,12 +226,11 @@
             document.getElementById('errorMessage').style.display = 'none';
         }
 
-        // Check if we have access token from URL (password reset flow)
+        // Check if we have access token from URL
         window.addEventListener('load', () => {
-            const hash = window.location.hash;
-            if (hash && hash.includes('access_token')) {
-                // We're in password reset flow - the form will handle the password update
-                console.log('Password reset flow detected');
+            const accessToken = getTokenFromURL();
+            if (!accessToken) {
+                showError('Invalid reset link. Please request a new password reset from the app.');
             }
         });
     </script>
